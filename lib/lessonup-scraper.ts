@@ -7,7 +7,13 @@ import type { LessonContent, LessonSlide } from "./types";
 const SELF_PACED_URL_RE =
   /^https:\/\/lessonup\.app\/self-paced\/[0-9a-fA-F-]{10,}\/?$/i;
 
-const CONTEXT_CHAR_LIMIT = 8000;
+// Claude has a large context window, so this is a generous safety cap
+// rather than a tight budget — 8000 was too small in practice: a normal
+// ~27-slide lesson already used ~9300 chars uncapped, so anything after
+// slide ~19 was silently missing from what the tutor knew about (leerlingen
+// asking about later slides got confused/incomplete answers). 30000 chars
+// (~7500 tokens) comfortably covers even long lessons at negligible cost.
+const CONTEXT_CHAR_LIMIT = 30000;
 
 export class InvalidLessonUrlError extends Error {}
 export class LessonScrapeError extends Error {}
@@ -26,6 +32,12 @@ export function isValidSelfPacedUrl(url: string): boolean {
 async function launchBrowser(): Promise<Browser> {
   return chromium.launch({
     headless: true,
+    // A stripped-down Chromium build made for headless automation — no
+    // browser-UI/DevTools/extension machinery that a normal Chromium still
+    // carries even when run headless. Meaningfully lighter, which matters
+    // on a memory-constrained host. We only ever call page.goto/evaluate,
+    // nothing that needs the full browser.
+    channel: "chromium-headless-shell",
     args: [
       // Without --disable-dev-shm-usage, Chromium uses /dev/shm for shared
       // memory, which Docker limits to 64MB by default — that reliably
