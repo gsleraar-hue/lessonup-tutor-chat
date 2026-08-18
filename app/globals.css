@@ -1,0 +1,233 @@
+:root {
+  --lu-blue: #1d4ed8;
+  --lu-blue-dark: #1739ad;
+  --lu-blue-light: #eff6ff;
+  --lu-bg: #f7f8fa;
+  --lu-border: #e2e5ea;
+  --lu-text: #1a1d21;
+  --lu-text-muted: #6b7280;
+  --lu-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 32px rgba(16, 24, 40, 0.08);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--lu-bg);
+  color: var(--lu-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+a {
+  color: var(--lu-blue);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
+
+/* --- Startscherm ("plak je lesurl") ------------------------------------ */
+
+.home-shell {
+  min-height: 100dvh;
+  background:
+    radial-gradient(720px 420px at 15% -10%, #dbe7ff 0%, rgba(219, 231, 255, 0) 60%),
+    radial-gradient(600px 360px at 100% 0%, #e7f0ff 0%, rgba(231, 240, 255, 0) 55%),
+    var(--lu-bg);
+}
+
+.home-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 56px 20px 40px;
+}
+
+.home-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--lu-blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+
+.home-title {
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.home-subtitle {
+  color: var(--lu-text-muted);
+  margin: 0 0 32px;
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 46ch;
+}
+
+.home-card {
+  background: white;
+  border: 1px solid var(--lu-border);
+  border-radius: 20px;
+  box-shadow: var(--lu-shadow);
+  padding: 28px;
+}
+
+.steps {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.step-badge {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--lu-blue);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.step-text {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--lu-text);
+}
+
+.step-text strong {
+  font-weight: 600;
+}
+
+.field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 14.5px;
+  margin-bottom: 8px;
+}
+
+.lesson-input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--lu-border);
+  font-size: 15px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lesson-input:focus {
+  outline: none;
+  border-color: var(--lu-blue);
+  box-shadow: 0 0 0 3px var(--lu-blue-light);
+}
+
+.field-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--lu-text-muted);
+  line-height: 1.5;
+}
+
+.example-chip-row {
+  margin: 10px 0 0;
+}
+
+.example-chip {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--lu-blue);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.primary-button {
+  width: 100%;
+  margin-top: 20px;
+  background: var(--lu-blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 15.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--lu-blue-dark);
+}
+
+.primary-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.primary-button:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-banner {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
