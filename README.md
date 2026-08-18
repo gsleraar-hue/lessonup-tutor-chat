@@ -36,19 +36,7 @@ zonder in te loggen) en start het gesprek.
    die openklapt tot een chatpaneel, zoals een typische chatwidget. Dit is
    dichter bij hoe het er in een echte integratie uit zou zien dan een aparte
    chatpagina.
-5. **Voorlezen (optioneel)**: elk tutor-bericht heeft een 🔊-knopje
-   (`components/MessageBubble.tsx`) dat de tekst laat voorlezen via
-   `/api/tts`, die op zijn beurt **Piper** aanroept — een zelf-gehoste,
-   offline text-to-speech-engine (zie Dockerfile). Eerst gebruikte dit
-   ElevenLabs' API, maar de gratis laag bleek een hard eenmalig
-   tekens-quotum te hebben (niet maandelijks resettend) — na uitputting
-   faalde de knop stilletjes. Piper draait lokaal, dus er is geen extern
-   quotum om tegenaan te lopen; de audio klinkt iets minder natuurlijk dan
-   ElevenLabs, en kost een paar seconden CPU-tijd per bericht i.p.v. een
-   netwerkcall. Zonder Piper geïnstalleerd (bv. lokaal draaien zonder
-   Docker) blijft de rest van de app gewoon werken; het voorlees-knopje
-   toont dan een zichtbare foutstatus i.p.v. geluid.
-6. **Taalkeuze (NL/EN)**: op het startscherm kiest de leerling met een
+5. **Taalkeuze (NL/EN)**: op het startscherm kiest de leerling met een
    vlaggetje de gesprekstaal. Die keuze bepaalt de taal van de hele chat
    (systeemprompt, voorbeeldvragen, vervolgchips, UI-teksten) — ongeacht in
    welke taal de leerling zelf typt of welke taal de lesinhoud zelf heeft.

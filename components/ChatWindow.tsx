@@ -145,12 +145,7 @@ export default function ChatWindow({
           </p>
         )}
         {messages.map((m, i) => (
-          <MessageBubble
-            key={i}
-            message={m}
-            language={language}
-            speakable={!(isStreaming && i === messages.length - 1)}
-          />
+          <MessageBubble key={i} message={m} />
         ))}
         {!isStreaming && quickReplies.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>

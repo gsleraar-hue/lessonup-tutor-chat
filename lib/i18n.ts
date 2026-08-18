@@ -62,10 +62,6 @@ export const UI_STRINGS = {
       ],
       openingChip: "Waar kun je me allemaal mee helpen?",
     },
-    messageBubble: {
-      speakAria: "Lees dit bericht voor",
-      stopSpeakAria: "Stop voorlezen",
-    },
     api: {
       invalidRequest: "Ongeldige aanvraag.",
       noLessonUrl: "Geen lesurl meegegeven.",
@@ -81,10 +77,6 @@ export const UI_STRINGS = {
       contextAndMessageRequired: "Les-context en een niet-leeg bericht zijn verplicht.",
       messageTooLong: (max: number) => `Bericht is te lang (max ${max} tekens).`,
       contextAndHistoryRequired: "Les-context en gespreksgeschiedenis zijn verplicht.",
-      noTextToRead: "Geen tekst om voor te lezen.",
-      ttsMisconfigured: "ELEVENLABS_API_KEY ontbreekt op de server.",
-      ttsFailed: "Voorlezen is nu niet gelukt.",
-      ttsUnexpectedError: "Onverwachte fout bij het voorlezen.",
     },
     promptLanguageName: "Nederlands",
   },
@@ -135,10 +127,6 @@ export const UI_STRINGS = {
       ],
       openingChip: "What can you help me with?",
     },
-    messageBubble: {
-      speakAria: "Read this message aloud",
-      stopSpeakAria: "Stop reading aloud",
-    },
     api: {
       invalidRequest: "Invalid request.",
       noLessonUrl: "No lesson URL provided.",
@@ -153,10 +141,6 @@ export const UI_STRINGS = {
       contextAndMessageRequired: "Lesson context and a non-empty message are required.",
       messageTooLong: (max: number) => `Message is too long (max ${max} characters).`,
       contextAndHistoryRequired: "Lesson context and conversation history are required.",
-      noTextToRead: "No text to read aloud.",
-      ttsMisconfigured: "ELEVENLABS_API_KEY is missing on the server.",
-      ttsFailed: "Reading aloud didn't work this time.",
-      ttsUnexpectedError: "Unexpected error while generating speech.",
     },
     promptLanguageName: "English",
   },
@@ -191,7 +175,6 @@ export const UI_STRINGS = {
       fallbackSuggestions: string[];
       openingChip: string;
     };
-    messageBubble: { speakAria: string; stopSpeakAria: string };
     api: {
       invalidRequest: string;
       noLessonUrl: string;
@@ -204,10 +187,6 @@ export const UI_STRINGS = {
       contextAndMessageRequired: string;
       messageTooLong: (max: number) => string;
       contextAndHistoryRequired: string;
-      noTextToRead: string;
-      ttsMisconfigured: string;
-      ttsFailed: string;
-      ttsUnexpectedError: string;
     };
     promptLanguageName: string;
   }
