@@ -51,6 +51,18 @@ async function launchBrowser(): Promise<Browser> {
       "--metrics-recording-only",
       "--mute-audio",
       "--no-first-run",
+      // Merges the browser and renderer into one OS process (normally
+      // Chromium forks a separate renderer per tab via a "zygote" helper
+      // process) — meaningfully lowers baseline memory at some cost to
+      // stability/isolation. Worth it specifically on very constrained
+      // hosts (e.g. a 512MB instance) where that per-process overhead is
+      // the difference between fitting and OOM-crashing.
+      "--single-process",
+      "--no-zygote",
+      // Caps the JS heap so a heavy page can't itself balloon memory
+      // unbounded; the Meteor app's bundle is a few MB of JS, well under
+      // this.
+      "--js-flags=--max-old-space-size=128",
     ],
   });
 }
