@@ -167,10 +167,12 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
                   background: "var(--lu-blue-light, #eff6ff)",
                   color: "var(--lu-blue, #1d4ed8)",
                   border: "1px solid var(--lu-blue, #1d4ed8)",
-                  borderRadius: 999,
-                  padding: "6px 12px",
+                  borderRadius: 14,
+                  padding: "7px 12px",
                   fontSize: 13,
-                  lineHeight: 1.3,
+                  lineHeight: 1.35,
+                  textAlign: "left",
+                  alignSelf: "flex-start",
                   cursor: "pointer",
                 }}
               >
