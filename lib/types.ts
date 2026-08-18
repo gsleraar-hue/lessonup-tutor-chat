@@ -25,10 +25,19 @@ export interface ChatRequestBody {
   lessonTitle: string;
   history: ChatMessage[];
   message: string;
+  language?: string;
+}
+
+export interface QuickRepliesRequestBody {
+  contextText: string;
+  lessonTitle: string;
+  history: ChatMessage[];
+  language?: string;
 }
 
 export interface LessonRequestBody {
   url: string;
+  language?: string;
 }
 
 export interface LessonErrorResponse {

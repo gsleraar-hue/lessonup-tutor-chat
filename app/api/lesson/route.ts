@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
 import {
   fetchLessonContent,
   InvalidLessonUrlError,
@@ -17,18 +18,22 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: t(DEFAULT_LANGUAGE).api.invalidRequest }, { status: 400 });
   }
 
+  const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const strings = t(language).api;
+
   if (!body?.url || typeof body.url !== "string") {
-    return NextResponse.json({ error: "Geen lesurl meegegeven." }, { status: 400 });
+    return NextResponse.json({ error: strings.noLessonUrl }, { status: 400 });
   }
 
   try {
-    const lesson = await fetchLessonContent(body.url);
+    const lesson = await fetchLessonContent(body.url, language);
     lesson.suggestedQuestions = await generateSuggestedQuestions(
       lesson.title,
-      lesson.contextText
+      lesson.contextText,
+      language
     );
     return NextResponse.json(lesson);
   } catch (err) {
@@ -39,9 +44,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: err.message }, { status: 502 });
     }
     console.error("Onverwachte fout bij ophalen les:", err);
-    return NextResponse.json(
-      { error: "Onverwachte fout bij het ophalen van de les." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: strings.unexpectedLessonError }, { status: 500 });
   }
 }

@@ -1,28 +1,24 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
 import { generateQuickReplies } from "@/lib/quickReplies";
-import type { ChatMessage } from "@/lib/types";
+import type { QuickRepliesRequestBody } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-interface QuickRepliesRequestBody {
-  contextText: string;
-  lessonTitle: string;
-  history: ChatMessage[];
-}
 
 export async function POST(req: Request) {
   let body: QuickRepliesRequestBody;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: t(DEFAULT_LANGUAGE).api.invalidRequest }, { status: 400 });
   }
 
+  const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
   const { contextText, lessonTitle, history } = body ?? {};
   if (!contextText || !Array.isArray(history)) {
     return NextResponse.json(
-      { error: "Les-context en gespreksgeschiedenis zijn verplicht." },
+      { error: t(language).api.contextAndHistoryRequired },
       { status: 400 }
     );
   }
@@ -30,7 +26,8 @@ export async function POST(req: Request) {
   const options = await generateQuickReplies(
     lessonTitle || "deze les",
     contextText,
-    history
+    history,
+    language
   );
   return NextResponse.json({ options });
 }

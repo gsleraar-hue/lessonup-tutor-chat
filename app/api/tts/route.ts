@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,24 +15,24 @@ const VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
 const MAX_TTS_CHARS = 2000;
 
 export async function POST(req: Request) {
-  let body: { text?: string };
+  let body: { text?: string; language?: string };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: t(DEFAULT_LANGUAGE).api.invalidRequest }, { status: 400 });
   }
+
+  const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const strings = t(language).api;
 
   const text = body.text?.trim();
   if (!text) {
-    return NextResponse.json({ error: "Geen tekst om voor te lezen." }, { status: 400 });
+    return NextResponse.json({ error: strings.noTextToRead }, { status: 400 });
   }
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "ELEVENLABS_API_KEY ontbreekt op de server." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: strings.ttsMisconfigured }, { status: 500 });
   }
 
   try {
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       console.error("ElevenLabs TTS-fout:", res.status, errText);
-      return NextResponse.json({ error: "Voorlezen is nu niet gelukt." }, { status: 502 });
+      return NextResponse.json({ error: strings.ttsFailed }, { status: 502 });
     }
 
     const audioBuffer = await res.arrayBuffer();
@@ -64,9 +65,6 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("Onverwachte fout bij TTS:", err);
-    return NextResponse.json(
-      { error: "Onverwachte fout bij het voorlezen." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: strings.ttsUnexpectedError }, { status: 500 });
   }
 }

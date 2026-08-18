@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DEFAULT_LANGUAGE, type Language, t } from "@/lib/i18n";
 import type { ChatMessage } from "@/lib/types";
 
 // Zorgt dat er over alle chatbubbels heen maar één audiofragment tegelijk
@@ -24,13 +25,16 @@ function stopActiveAudio() {
 export default function MessageBubble({
   message,
   speakable = false,
+  language = DEFAULT_LANGUAGE,
 }: {
   message: ChatMessage;
   /** Whether de voorlezen-knop mag getoond worden — uit tijdens het
    * streamen van dit bericht, zodat er geen halve/steeds veranderende zin
    * wordt voorgelezen. */
   speakable?: boolean;
+  language?: Language;
 }) {
+  const strings = t(language).messageBubble;
   const isUser = message.role === "user";
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
@@ -114,8 +118,8 @@ export default function MessageBubble({
           type="button"
           onClick={toggleSpeak}
           disabled={isLoadingAudio}
-          aria-label={isSpeaking ? "Stop voorlezen" : "Lees dit bericht voor"}
-          title={isSpeaking ? "Stop voorlezen" : "Lees dit bericht voor"}
+          aria-label={isSpeaking ? strings.stopSpeakAria : strings.speakAria}
+          title={isSpeaking ? strings.stopSpeakAria : strings.speakAria}
           style={{
             flexShrink: 0,
             width: 26,

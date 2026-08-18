@@ -1,37 +1,33 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { type Language, t } from "@/lib/i18n";
 import type { ChatMessage, LessonContent } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 
-// Generieke fallback, voor het geval het genereren van lesspecifieke
-// voorbeeldvragen (server-side, bij het ophalen van de les) is mislukt.
-const FALLBACK_SUGGESTED_QUESTIONS = [
-  "Ik snap deze les niet zo goed, kun je een hint geven?",
-  "Kun je iets uit de les nog eens simpel uitleggen?",
-  "Overhoor me over deze les",
-  "Waar gaat deze les eigenlijk over?",
-];
-
-// Altijd aanwezig als eerste chip bij een gloednieuw gesprek — een opener
-// voor leerlingen die niet meteen weten waar ze moeten beginnen.
-const OPENING_CHIP = "Waar kun je me allemaal mee helpen?";
-
-function buildInitialQuickReplies(lesson: LessonContent): string[] {
+function buildInitialQuickReplies(lesson: LessonContent, language: Language): string[] {
+  const fallback = t(language).chatWindow.fallbackSuggestions;
   const lessonSpecific =
     lesson.suggestedQuestions && lesson.suggestedQuestions.length > 0
       ? lesson.suggestedQuestions
-      : FALLBACK_SUGGESTED_QUESTIONS;
-  return [OPENING_CHIP, ...lessonSpecific.slice(0, 3)];
+      : fallback;
+  return [t(language).chatWindow.openingChip, ...lessonSpecific.slice(0, 3)];
 }
 
-export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
+export default function ChatWindow({
+  lesson,
+  language,
+}: {
+  lesson: LessonContent;
+  language: Language;
+}) {
+  const strings = t(language).chatWindow;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quickReplies, setQuickReplies] = useState<string[]>(() =>
-    buildInitialQuickReplies(lesson)
+    buildInitialQuickReplies(lesson, language)
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +46,7 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
           contextText: lesson.contextText,
           lessonTitle: lesson.title,
           history: historyWithReply,
+          language,
         }),
       });
       if (!res.ok) return;
@@ -85,12 +82,13 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
           lessonTitle: lesson.title,
           history,
           message: text,
+          language,
         }),
       });
 
       if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => "");
-        throw new Error(errText || "Onbekende fout van de server.");
+        throw new Error(errText || strings.unknownServerError);
       }
 
       const reader = res.body.getReader();
@@ -117,9 +115,7 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
       ];
       fetchQuickReplies(completedHistory);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Er ging iets mis tijdens het chatten."
-      );
+      setError(err instanceof Error ? err.message : strings.genericChatError);
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsStreaming(false);
@@ -145,14 +141,14 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
       >
         {messages.length === 0 && (
           <p style={{ color: "var(--lu-text-muted)", fontSize: 14, margin: 0 }}>
-            Stel een vraag over deze les. De tutor helpt je op weg met hints in
-            plaats van kant-en-klare antwoorden.
+            {strings.emptyState}
           </p>
         )}
         {messages.map((m, i) => (
           <MessageBubble
             key={i}
             message={m}
+            language={language}
             speakable={!(isStreaming && i === messages.length - 1)}
           />
         ))}
@@ -200,7 +196,7 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Typ je vraag over de les..."
+          placeholder={strings.inputPlaceholder}
           disabled={isStreaming}
           style={{
             flex: 1,
@@ -223,7 +219,7 @@ export default function ChatWindow({ lesson }: { lesson: LessonContent }) {
             opacity: isStreaming || !input.trim() ? 0.6 : 1,
           }}
         >
-          Stuur
+          {strings.send}
         </button>
       </form>
     </div>

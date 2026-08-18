@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { type Language, t } from "@/lib/i18n";
 import type { LessonContent } from "@/lib/types";
 
 const EXAMPLE_URL = "https://lessonup.app/self-paced/35f949de-80e0-4f94-a726-e7351f34d0dc";
 
-export default function LessonUrlForm() {
+export default function LessonUrlForm({ language }: { language: Language }) {
   const router = useRouter();
+  const strings = t(language).form;
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,18 +22,19 @@ export default function LessonUrlForm() {
       const res = await fetch("/api/lesson", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, language }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Er ging iets mis bij het ophalen van de les.");
+        setError(data.error || strings.defaultError);
         return;
       }
       const lesson = data as LessonContent;
       sessionStorage.setItem("lesson", JSON.stringify(lesson));
+      sessionStorage.setItem("language", language);
       router.push("/chat");
     } catch (err) {
-      setError("Kon de server niet bereiken. Probeer het opnieuw.");
+      setError(strings.networkError);
     } finally {
       setLoading(false);
     }
@@ -43,56 +46,53 @@ export default function LessonUrlForm() {
         <li className="step">
           <span className="step-badge">1</span>
           <span className="step-text">
-            <strong>Vraag je docent om de link</strong> naar de les, of zoek 'm
-            op in je mail, Google Classroom of Teams — overal waar je de les
-            hebt gekregen.
+            <strong>{strings.step1Bold}</strong>
+            {strings.step1Rest}
           </span>
         </li>
         <li className="step">
           <span className="step-badge">2</span>
           <span className="step-text">
-            <strong>Kopieer de link</strong> (lang indrukken of rechtermuisknop
-            → "Link kopiëren").
+            <strong>{strings.step2Bold}</strong>
+            {strings.step2Rest}
           </span>
         </li>
         <li className="step">
           <span className="step-badge">3</span>
           <span className="step-text">
-            <strong>Plak 'm hieronder</strong> — de tutor verschijnt dan als
-            chatbubbel rechtsonder in je les.
+            <strong>{strings.step3Bold}</strong>
+            {strings.step3Rest}
           </span>
         </li>
       </ol>
 
       <form onSubmit={handleSubmit}>
         <label htmlFor="lesson-url" className="field-label">
-          Link naar je les
+          {strings.fieldLabel}
         </label>
         <input
           id="lesson-url"
           type="url"
           required
-          placeholder="Plak hier de link naar je les"
+          placeholder={strings.placeholder}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="lesson-input"
         />
-        <p className="field-hint">
-          De link ziet er ongeveer zo uit: lessonup.app/self-paced/...
-        </p>
+        <p className="field-hint">{strings.fieldHint}</p>
         <div className="example-chip-row">
           <button
             type="button"
             className="example-chip"
             onClick={() => setUrl(EXAMPLE_URL)}
           >
-            Geen link bij de hand? Probeer een voorbeeldles →
+            {strings.exampleChip}
           </button>
         </div>
 
         <button type="submit" disabled={loading} className="primary-button">
           {loading && <span className="spinner" aria-hidden="true" />}
-          {loading ? "Les wordt opgehaald..." : "Start met de tutor"}
+          {loading ? strings.loading : strings.submit}
         </button>
         {error && <p className="error-banner">{error}</p>}
       </form>

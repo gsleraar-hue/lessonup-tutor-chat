@@ -1,4 +1,5 @@
 import { chromium, type Browser } from "playwright";
+import { type Language, t } from "./i18n";
 import type { LessonContent, LessonSlide } from "./types";
 
 // Case-insensitive: domain names aren't case-sensitive (e.g. "lessonUp.app"
@@ -83,31 +84,36 @@ async function launchBrowser(): Promise<Browser> {
  * manual inspection of real lesson pages. This is inherently fragile to a
  * LessonUp front-end redesign — replace with an internal API once available.
  */
-export async function fetchLessonContent(url: string): Promise<LessonContent> {
+export async function fetchLessonContent(
+  url: string,
+  language: Language = "nl"
+): Promise<LessonContent> {
+  const strings = t(language).api;
   const trimmedUrl = url.trim();
   if (!isValidSelfPacedUrl(trimmedUrl)) {
-    throw new InvalidLessonUrlError(
-      "Alleen publieke LessonUp self-paced leerling-links worden ondersteund, bv. https://lessonup.app/self-paced/<id>"
-    );
+    throw new InvalidLessonUrlError(strings.invalidLessonUrl);
   }
 
   let browser: Browser;
   try {
     browser = await launchBrowser();
   } catch (err) {
-    throw new LessonScrapeError(
-      `Kon geen headless browser starten (draai je 'npm run playwright:install'?): ${String(err)}`
-    );
+    throw new LessonScrapeError(`${strings.noBrowser} ${String(err)}`);
   }
 
   try {
-    return await scrapeLesson(browser, trimmedUrl);
+    return await scrapeLesson(browser, trimmedUrl, language);
   } finally {
     await browser.close().catch(() => {});
   }
 }
 
-async function scrapeLesson(browser: Browser, trimmedUrl: string): Promise<LessonContent> {
+async function scrapeLesson(
+  browser: Browser,
+  trimmedUrl: string,
+  language: Language
+): Promise<LessonContent> {
+  const strings = t(language).api;
   // Force Dutch so the scraped slide text matches what a Dutch student
   // actually sees (and what the system prompt is written in), instead of
   // whatever locale the server's default Accept-Language happens to be.
@@ -150,19 +156,21 @@ async function scrapeLesson(browser: Browser, trimmedUrl: string): Promise<Lesso
       });
 
     const rawText = await page.evaluate(() => document.body.innerText);
-    return parseLessonText(rawText, trimmedUrl);
+    return parseLessonText(rawText, trimmedUrl, language);
   } catch (err) {
     if (err instanceof InvalidLessonUrlError) throw err;
-    throw new LessonScrapeError(
-      `Kon de les niet ophalen van LessonUp: ${String(err)}`
-    );
+    throw new LessonScrapeError(`${strings.scrapeFailed} ${String(err)}`);
   } finally {
     await page.close().catch(() => {});
     await context.close().catch(() => {});
   }
 }
 
-export function parseLessonText(rawText: string, sourceUrl: string): LessonContent {
+export function parseLessonText(
+  rawText: string,
+  sourceUrl: string,
+  language: Language = "nl"
+): LessonContent {
   const lines = rawText
     .split("\n")
     .map((l) => l.trim())
@@ -172,7 +180,7 @@ export function parseLessonText(rawText: string, sourceUrl: string): LessonConte
   const countLineIdx = lines.findIndex((l) => /^\d+\s+slides?\b/i.test(l));
 
   const title =
-    countLineIdx > 0 ? lines[countLineIdx - 1] : lines[0] ?? "Onbekende les";
+    countLineIdx > 0 ? lines[countLineIdx - 1] : lines[0] ?? t(language).api.unknownLessonTitle;
 
   const slideLines =
     slideListHeaderIdx >= 0 ? lines.slice(slideListHeaderIdx + 1) : lines;
@@ -208,9 +216,7 @@ export function parseLessonText(rawText: string, sourceUrl: string): LessonConte
   // (e.g. "Meer lessen zoals deze" recommendations), not a slide — discard.
 
   if (slides.length === 0) {
-    throw new LessonScrapeError(
-      "Geen slides gevonden op de pagina — de lespagina is mogelijk niet (volledig) geladen of het formaat is gewijzigd."
-    );
+    throw new LessonScrapeError(t(language).api.noSlidesFound);
   }
 
   const contextText = buildContextText(title, slides);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { type Language, t } from "@/lib/i18n";
 import type { LessonContent } from "@/lib/types";
 import ChatWindow from "./ChatWindow";
 
@@ -9,8 +10,15 @@ import ChatWindow from "./ChatWindow";
  * expands into a chat panel, meant to sit on top of the real lesson (shown
  * behind it, e.g. in an iframe) rather than replacing the lesson screen.
  */
-export default function ChatWidget({ lesson }: { lesson: LessonContent }) {
+export default function ChatWidget({
+  lesson,
+  language,
+}: {
+  lesson: LessonContent;
+  language: Language;
+}) {
   const [open, setOpen] = useState(false);
+  const strings = t(language).widget;
 
   return (
     <div
@@ -54,12 +62,12 @@ export default function ChatWidget({ lesson }: { lesson: LessonContent }) {
             }}
           >
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>AI-tutor</div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{strings.title}</div>
               <div style={{ fontSize: 12, opacity: 0.85 }}>{lesson.title}</div>
             </div>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Chat sluiten"
+              aria-label={strings.closeAria}
               style={{
                 background: "transparent",
                 border: "none",
@@ -73,14 +81,14 @@ export default function ChatWidget({ lesson }: { lesson: LessonContent }) {
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            <ChatWindow lesson={lesson} />
+            <ChatWindow lesson={lesson} language={language} />
           </div>
         </div>
       )}
 
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Chat sluiten" : "Chat openen"}
+        aria-label={open ? strings.closeAria : strings.openAria}
         style={{
           width: 56,
           height: 56,

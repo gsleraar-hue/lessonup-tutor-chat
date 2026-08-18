@@ -1,4 +1,5 @@
 import { ANTHROPIC_MODEL, getAnthropicClient } from "@/lib/anthropic";
+import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
 import { buildSystemPrompt } from "@/lib/prompts";
 import type { ChatRequestBody } from "@/lib/types";
 
@@ -13,20 +14,18 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return new Response("Ongeldige aanvraag.", { status: 400 });
+    return new Response(t(DEFAULT_LANGUAGE).api.invalidRequest, { status: 400 });
   }
+
+  const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const strings = t(language).api;
 
   const { contextText, lessonTitle, history, message } = body ?? {};
   if (!contextText || !message || typeof message !== "string" || !message.trim()) {
-    return new Response("Les-context en een niet-leeg bericht zijn verplicht.", {
-      status: 400,
-    });
+    return new Response(strings.contextAndMessageRequired, { status: 400 });
   }
   if (message.length > MAX_MESSAGE_LENGTH) {
-    return new Response(
-      `Bericht is te lang (max ${MAX_MESSAGE_LENGTH} tekens).`,
-      { status: 400 }
-    );
+    return new Response(strings.messageTooLong(MAX_MESSAGE_LENGTH), { status: 400 });
   }
 
   let anthropic;
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
         const claudeStream = anthropic.messages.stream({
           model: ANTHROPIC_MODEL,
           max_tokens: 1024,
-          system: buildSystemPrompt(lessonTitle || "deze les", contextText),
+          system: buildSystemPrompt(lessonTitle || "deze les", contextText, language),
           messages,
         });
 

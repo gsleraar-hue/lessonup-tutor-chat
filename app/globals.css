@@ -69,6 +69,41 @@ textarea {
   margin-bottom: 16px;
 }
 
+.lang-switch {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border: 1px solid var(--lu-border);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: var(--lu-shadow);
+  flex-shrink: 0;
+}
+
+.lang-switch-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.lang-switch-btn:hover {
+  opacity: 0.8;
+}
+
+.lang-switch-btn-active {
+  background: var(--lu-blue-light);
+  opacity: 1;
+}
+
 .home-title {
   font-size: 28px;
   line-height: 1.2;

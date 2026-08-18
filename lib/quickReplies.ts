@@ -1,11 +1,6 @@
 import { ANTHROPIC_MODEL, getAnthropicClient } from "./anthropic";
+import { type Language, t } from "./i18n";
 import type { ChatMessage } from "./types";
-
-const FALLBACK_REPLIES = [
-  "Geef nog een hint",
-  "Ik snap het, dankje!",
-  "Kun je het anders uitleggen?",
-];
 
 const MAX_HISTORY_FOR_REPLIES = 6;
 
@@ -18,13 +13,16 @@ const MAX_HISTORY_FOR_REPLIES = 6;
 export async function generateQuickReplies(
   lessonTitle: string,
   contextText: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  language: Language = "nl"
 ): Promise<string[]> {
+  const fallback = t(language).chatWindow.fallbackSuggestions.slice(0, 3);
   const recentHistory = history.slice(-MAX_HISTORY_FOR_REPLIES);
-  if (recentHistory.length === 0) return FALLBACK_REPLIES;
+  if (recentHistory.length === 0) return fallback;
 
   try {
     const anthropic = getAnthropicClient();
+    const languageName = t(language).promptLanguageName;
     const transcript = recentHistory
       .map((m) => `${m.role === "user" ? "Leerling" : "Tutor"}: ${m.content}`)
       .join("\n");
@@ -36,10 +34,10 @@ export async function generateQuickReplies(
         "Je kijkt naar het laatste stukje van een chatgesprek tussen een leerling en een AI-huiswerkbegeleider over een specifieke les. " +
         "Bedenk 2 tot 4 korte, klikbare vervolgopties die de LEERLING als volgend bericht zou kunnen sturen (ik-vorm, max ~8 woorden per optie). " +
         "Twee gevallen: " +
-        "1) Als de tutor het net had over een meerkeuzevraag uit de les (kijk in de lesinhoud hieronder naar de bijbehorende antwoordopties): maak van ELKE antwoordoptie een aparte vervolgoptie in de vorm 'Ik denk <optie>', in dezelfde volgorde als in de les, zonder te verklappen welke goed is. " +
-        "2) Anders: bedenk natuurlijke, korte vervolgopties die passen bij het gesprek, zoals 'Geef nog een hint', 'Ik snap het nu, dankje', 'Kun je dat anders uitleggen?', 'Overhoor me verder'. " +
+        `1) Als de tutor het net had over een meerkeuzevraag uit de les (kijk in de lesinhoud hieronder naar de bijbehorende antwoordopties): maak van ELKE antwoordoptie een aparte vervolgoptie waarin de leerling dat antwoord voorstelt in de ik-vorm — bv. patroon "Ik denk <optie>" in het Nederlands, of "I think <optie>" in het Engels; gebruik het patroon dat hoort bij de gekozen uitvoertaal (${languageName}). Zelfde volgorde als in de les, zonder te verklappen welke goed is. ` +
+        `2) Anders: bedenk natuurlijke, korte vervolgopties die passen bij het gesprek — bv. patronen als "Geef nog een hint" / "Give me another hint", "Ik snap het nu, dankje" / "I get it now, thanks", "Kun je dat anders uitleggen?" / "Can you explain that differently?", "Overhoor me verder" / "Quiz me some more"; kies steeds de versie die hoort bij de gekozen uitvoertaal (${languageName}). ` +
         "Verklap zelf nooit een antwoord dat de tutor nog niet had gegeven. Blijf on-topic bij de les. " +
-        "Antwoord ALLEEN met een JSON-array van strings, in het Nederlands. Geen uitleg, geen markdown.",
+        `Antwoord ALLEEN met een JSON-array van strings, VOLLEDIG in het ${languageName} (dus niet in het Nederlands als de gekozen taal iets anders is). Geen uitleg, geen markdown.`,
       messages: [
         {
           role: "user",
@@ -49,10 +47,10 @@ export async function generateQuickReplies(
     });
 
     const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return FALLBACK_REPLIES;
+    if (!textBlock || textBlock.type !== "text") return fallback;
 
     const match = textBlock.text.match(/\[[\s\S]*\]/);
-    if (!match) return FALLBACK_REPLIES;
+    if (!match) return fallback;
 
     const parsed = JSON.parse(match[0]);
     if (
@@ -62,9 +60,9 @@ export async function generateQuickReplies(
     ) {
       return parsed.slice(0, 4);
     }
-    return FALLBACK_REPLIES;
+    return fallback;
   } catch (err) {
     console.error("Kon geen vervolgopties genereren:", err);
-    return FALLBACK_REPLIES;
+    return fallback;
   }
 }

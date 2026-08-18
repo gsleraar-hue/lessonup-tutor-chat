@@ -1,11 +1,5 @@
 import { ANTHROPIC_MODEL, getAnthropicClient } from "./anthropic";
-
-const FALLBACK_SUGGESTIONS = [
-  "Ik snap deze les niet zo goed, kun je een hint geven?",
-  "Kun je iets uit de les nog eens simpel uitleggen?",
-  "Overhoor me over deze les",
-  "Waar gaat deze les eigenlijk over?",
-];
+import { type Language, t } from "./i18n";
 
 /**
  * Genereert een paar korte, on-topic voorbeeldvragen die een leerling zou
@@ -15,10 +9,13 @@ const FALLBACK_SUGGESTIONS = [
  */
 export async function generateSuggestedQuestions(
   lessonTitle: string,
-  contextText: string
+  contextText: string,
+  language: Language = "nl"
 ): Promise<string[]> {
+  const fallback = t(language).chatWindow.fallbackSuggestions;
   try {
     const anthropic = getAnthropicClient();
+    const languageName = t(language).promptLanguageName;
     const response = await anthropic.messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: 300,
@@ -29,7 +26,7 @@ export async function generateSuggestedQuestions(
         "BELANGRIJK: verklap zelf nooit een (vermoedelijk) juist antwoord op een quizvraag of opgave uit de les, ook niet terloops. " +
         "Gebruik GEEN 'klopt mijn antwoord'-achtige vragen — die slaan nergens op als openingsbericht, want de leerling heeft nog helemaal geen antwoord gegeven in dit gesprek. Dat type vraag past pas later, als vervolg op iets dat al besproken is. " +
         "Varieer in plaats daarvan met: een hint-vraag over een specifieke opgave, een uitleg-vraag over een onderdeel van de lesstof, een overhoor-verzoek, en een nieuwsgierige open vraag over de les. " +
-        "Antwoord ALLEEN met een JSON-array van 4 korte strings (elk max ~12 woorden), in het Nederlands. Geen uitleg, geen markdown, alleen de JSON-array.",
+        `Antwoord ALLEEN met een JSON-array van 4 korte strings (elk max ~12 woorden), in het ${languageName}. Geen uitleg, geen markdown, alleen de JSON-array.`,
       messages: [
         {
           role: "user",
@@ -39,10 +36,10 @@ export async function generateSuggestedQuestions(
     });
 
     const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return FALLBACK_SUGGESTIONS;
+    if (!textBlock || textBlock.type !== "text") return fallback;
 
     const match = textBlock.text.match(/\[[\s\S]*\]/);
-    if (!match) return FALLBACK_SUGGESTIONS;
+    if (!match) return fallback;
 
     const parsed = JSON.parse(match[0]);
     if (
@@ -52,9 +49,9 @@ export async function generateSuggestedQuestions(
     ) {
       return parsed.slice(0, 4);
     }
-    return FALLBACK_SUGGESTIONS;
+    return fallback;
   } catch (err) {
     console.error("Kon geen lesspecifieke voorbeeldvragen genereren:", err);
-    return FALLBACK_SUGGESTIONS;
+    return fallback;
   }
 }
