@@ -20,9 +20,12 @@ const MAX_TTS_CHARS = 2000;
 // few seconds of CPU time per message instead of a network call.
 const PIPER_DIR = process.env.PIPER_DIR || "/opt/piper";
 const PIPER_BIN = path.join(PIPER_DIR, "piper");
+// "low" quality: noticeably faster to synthesize than "medium" on a
+// CPU-constrained host (Render's free tier made "medium" take 30-50s per
+// message), at the cost of a somewhat less natural voice.
 const VOICE_MODELS: Record<Language, string> = {
-  nl: path.join(PIPER_DIR, "voices", "nl_NL-mls-medium.onnx"),
-  en: path.join(PIPER_DIR, "voices", "en_US-lessac-medium.onnx"),
+  nl: path.join(PIPER_DIR, "voices", "nl_NL-mls_5809-low.onnx"),
+  en: path.join(PIPER_DIR, "voices", "en_US-lessac-low.onnx"),
 };
 
 function synthesizeSpeech(text: string, language: Language): Promise<Buffer> {
