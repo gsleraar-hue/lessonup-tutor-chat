@@ -16,45 +16,43 @@ export function isValidSelfPacedUrl(url: string): boolean {
   return SELF_PACED_URL_RE.test(url.trim());
 }
 
-// A single shared headless Chromium instance is reused across requests
-// instead of launching a fresh browser per lesson lookup — launching is the
-// slow/expensive part, individual pages/contexts are cheap.
-let browserPromise: Promise<Browser> | null = null;
-
-function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    browserPromise = chromium
-      .launch({
-        headless: true,
-        // Container-hardening flags: without --disable-dev-shm-usage,
-        // Chromium uses /dev/shm for shared memory, which Docker limits to
-        // 64MB by default — on constrained hosts (like a 1GB Fly.io
-        // machine) that reliably crashes the browser mid-request, which
-        // then surfaces as a confusing "Target page, context or browser
-        // has been closed" error on whatever request was using it.
-        // --no-sandbox/--disable-setuid-sandbox are needed because the
-        // container runs as root, where Chromium's sandbox refuses to
-        // start.
-        args: [
-          "--disable-dev-shm-usage",
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-        ],
-      })
-      .catch((err) => {
-        browserPromise = null;
-        throw err;
-      });
-    browserPromise.then((browser) => {
-      // If Chromium still crashes for some other reason, drop the shared
-      // instance so the next request launches a fresh one instead of
-      // repeatedly trying to use a dead browser.
-      browser.on("disconnected", () => {
-        browserPromise = null;
-      });
-    });
-  }
-  return browserPromise;
+// Chromium is launched fresh per request and fully closed afterwards,
+// rather than kept resident as a shared singleton. On memory-constrained
+// hosts (e.g. a 512MB free-tier instance), an always-on idle browser eats
+// into the same budget Next.js needs, leaving less headroom for the actual
+// page-render spike during a scrape. Launching per request costs ~1-2s but
+// means the browser only exists (and only competes for memory) while it's
+// actually doing work.
+async function launchBrowser(): Promise<Browser> {
+  return chromium.launch({
+    headless: true,
+    args: [
+      // Without --disable-dev-shm-usage, Chromium uses /dev/shm for shared
+      // memory, which Docker limits to 64MB by default — that reliably
+      // crashes the browser mid-request on constrained hosts.
+      "--disable-dev-shm-usage",
+      // Needed because the container runs as root, where Chromium's
+      // sandbox refuses to start.
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      // Memory-saving flags: trims background/telemetry machinery and
+      // extra renderer-process isolation that this single-page,
+      // text-only scrape doesn't need.
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
+      "--disable-breakpad",
+      "--disable-component-extensions-with-background-pages",
+      "--disable-default-apps",
+      "--disable-sync",
+      "--disable-features=IsolateOrigins,site-per-process,TranslateUI",
+      "--metrics-recording-only",
+      "--mute-audio",
+      "--no-first-run",
+    ],
+  });
 }
 
 /**
@@ -77,43 +75,48 @@ export async function fetchLessonContent(url: string): Promise<LessonContent> {
     );
   }
 
-  // One retry with a freshly-launched browser: the shared instance can have
-  // crashed (e.g. OOM on a small host) between getBrowser() resolving and
-  // us actually using it, which surfaces as a "Target page, context or
-  // browser has been closed" error rather than a clean rejection.
-  try {
-    return await scrapeLesson(trimmedUrl);
-  } catch (err) {
-    if (err instanceof InvalidLessonUrlError) throw err;
-    if (!isClosedBrowserError(err)) throw err;
-    browserPromise = null;
-    return await scrapeLesson(trimmedUrl);
-  }
-}
-
-function isClosedBrowserError(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err);
-  return /closed|disconnected|Target page/i.test(message);
-}
-
-async function scrapeLesson(trimmedUrl: string): Promise<LessonContent> {
   let browser: Browser;
   try {
-    browser = await getBrowser();
+    browser = await launchBrowser();
   } catch (err) {
     throw new LessonScrapeError(
       `Kon geen headless browser starten (draai je 'npm run playwright:install'?): ${String(err)}`
     );
   }
 
+  try {
+    return await scrapeLesson(browser, trimmedUrl);
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
+async function scrapeLesson(browser: Browser, trimmedUrl: string): Promise<LessonContent> {
   // Force Dutch so the scraped slide text matches what a Dutch student
   // actually sees (and what the system prompt is written in), instead of
   // whatever locale the server's default Accept-Language happens to be.
+  // A small viewport keeps layout/paint work (and thus memory) down — we
+  // only ever read text, never pixels.
   const context = await browser.newContext({
     locale: "nl-NL",
     extraHTTPHeaders: { "Accept-Language": "nl-NL,nl;q=0.9" },
+    viewport: { width: 800, height: 600 },
   });
   const page = await context.newPage();
+
+  // We only need the DOM text, never how the page actually looks — block
+  // images/media/fonts/stylesheets so Chromium never has to download or
+  // decode them. This is the single biggest memory saver: a lesson page is
+  // full of slide thumbnail images that otherwise all get fetched and
+  // rendered.
+  await page.route("**/*", (route) => {
+    const type = route.request().resourceType();
+    if (["image", "media", "font", "stylesheet"].includes(type)) {
+      route.abort();
+    } else {
+      route.continue();
+    }
+  });
 
   try {
     await page.goto(trimmedUrl, { waitUntil: "networkidle", timeout: 20000 });
