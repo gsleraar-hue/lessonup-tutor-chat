@@ -7,8 +7,14 @@ WORKDIR /app
 
 # System deps for Chromium (fonts, codecs, etc.) are installed by
 # `playwright install --with-deps`, which needs apt available as root.
+# ca-certificates is required too — without it, curl can't do any HTTPS
+# request at all ("error setting certificate file"), which broke the
+# Piper download in scripts/start.sh. node:20-slim doesn't include it by
+# default since `--no-install-recommends` skips curl's own recommendation
+# of it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
