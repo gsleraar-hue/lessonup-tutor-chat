@@ -1,18 +1,63 @@
+import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
+import { readFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { NextResponse } from "next/server";
-import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, isLanguage, type Language, t } from "@/lib/i18n";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// "George" — een van ElevenLabs' standaard meegeleverde stemmen die WEL op
-// de gratis tier via de API werkt. Andere bekende voice-ID's (zoals de
-// vaak-gedocumenteerde "Rachel") blijken inmiddels "voice library"-stemmen
-// te zijn die een betaald abonnement vereisen voor API-gebruik — geeft dan
-// een 402 payment_required terug. Het "eleven_multilingual_v2"-model
-// spreekt de tekst uit in de taal van de tekst zelf (hier Nederlands), ook
-// al is de stem oorspronkelijk Engelstalig.
-const VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
 const MAX_TTS_CHARS = 2000;
+
+// Self-hosted Piper TTS (see Dockerfile for how the binary + voice models
+// are installed) instead of a cloud TTS API. This replaces ElevenLabs,
+// whose free tier turned out to have a hard one-time character quota
+// (10k, not monthly-resetting) — once exhausted, every "read aloud" click
+// failed. Piper runs locally, so there's no external quota to hit; the
+// trade-off is slightly more robotic-sounding audio than ElevenLabs, and a
+// few seconds of CPU time per message instead of a network call.
+const PIPER_DIR = process.env.PIPER_DIR || "/opt/piper";
+const PIPER_BIN = path.join(PIPER_DIR, "piper");
+const VOICE_MODELS: Record<Language, string> = {
+  nl: path.join(PIPER_DIR, "voices", "nl_NL-mls-medium.onnx"),
+  en: path.join(PIPER_DIR, "voices", "en_US-lessac-medium.onnx"),
+};
+
+function synthesizeSpeech(text: string, language: Language): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const outputFile = path.join(tmpdir(), `piper-${randomUUID()}.wav`);
+    const proc = spawn(
+      PIPER_BIN,
+      ["--model", VOICE_MODELS[language], "--output_file", outputFile],
+      // The piper binary ships its own libespeak-ng/libpiper_phonemize/
+      // libonnxruntime .so files alongside itself rather than relying on
+      // system packages — point the dynamic linker at that folder.
+      { env: { ...process.env, LD_LIBRARY_PATH: PIPER_DIR } }
+    );
+
+    let stderr = "";
+    proc.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`piper exited with code ${code}: ${stderr}`));
+        return;
+      }
+      readFile(outputFile)
+        .then(resolve, reject)
+        .finally(() => {
+          unlink(outputFile).catch(() => {});
+        });
+    });
+
+    proc.stdin.write(text);
+    proc.stdin.end();
+  });
+}
 
 export async function POST(req: Request) {
   let body: { text?: string; language?: string };
@@ -30,41 +75,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: strings.noTextToRead }, { status: 400 });
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: strings.ttsMisconfigured }, { status: 500 });
-  }
-
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
-      method: "POST",
+    const audioBuffer = await synthesizeSpeech(text.slice(0, MAX_TTS_CHARS), language);
+    return new NextResponse(new Uint8Array(audioBuffer), {
       headers: {
-        "xi-api-key": apiKey,
-        "Content-Type": "application/json",
-        Accept: "audio/mpeg",
-      },
-      body: JSON.stringify({
-        text: text.slice(0, MAX_TTS_CHARS),
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.error("ElevenLabs TTS-fout:", res.status, errText);
-      return NextResponse.json({ error: strings.ttsFailed }, { status: 502 });
-    }
-
-    const audioBuffer = await res.arrayBuffer();
-    return new NextResponse(audioBuffer, {
-      headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "audio/wav",
         "Cache-Control": "no-store",
       },
     });
   } catch (err) {
-    console.error("Onverwachte fout bij TTS:", err);
-    return NextResponse.json({ error: strings.ttsUnexpectedError }, { status: 500 });
+    console.error("Piper TTS-fout:", err);
+    return NextResponse.json({ error: strings.ttsFailed }, { status: 502 });
   }
 }

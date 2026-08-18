@@ -38,7 +38,9 @@ export default function MessageBubble({
   const isUser = message.role === "user";
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [speakError, setSpeakError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -46,12 +48,22 @@ export default function MessageBubble({
       mountedRef.current = false;
       // Stop alleen áls dit bericht het is dat aan het afspelen was.
       if (onActiveAudioStopped === handleStopped) stopActiveAudio();
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleStopped() {
     if (mountedRef.current) setIsSpeaking(false);
+  }
+
+  function flashError(message: string) {
+    if (!mountedRef.current) return;
+    setSpeakError(message);
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    errorTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) setSpeakError(null);
+    }, 3000);
   }
 
   async function toggleSpeak() {
@@ -62,15 +74,20 @@ export default function MessageBubble({
     }
 
     stopActiveAudio();
+    setSpeakError(null);
     setIsLoadingAudio(true);
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: message.content }),
+        body: JSON.stringify({ text: message.content, language }),
       });
       if (!res.ok || !mountedRef.current) {
-        throw new Error("Voorlezen is niet gelukt.");
+        // Geef de server-foutmelding door waar mogelijk (bv. "quota
+        // overschreden") i.p.v. alleen maar stil te falen — dat oogde
+        // eerder alsof de knop niets deed.
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || strings.speakAria);
       }
 
       const blob = await res.blob();
@@ -96,7 +113,10 @@ export default function MessageBubble({
       await audio.play();
     } catch (err) {
       console.error("Kon bericht niet voorlezen:", err);
-      if (mountedRef.current) setIsSpeaking(false);
+      if (mountedRef.current) {
+        setIsSpeaking(false);
+        flashError(err instanceof Error ? err.message : strings.speakAria);
+      }
     } finally {
       if (mountedRef.current) setIsLoadingAudio(false);
     }
@@ -119,15 +139,15 @@ export default function MessageBubble({
           onClick={toggleSpeak}
           disabled={isLoadingAudio}
           aria-label={isSpeaking ? strings.stopSpeakAria : strings.speakAria}
-          title={isSpeaking ? strings.stopSpeakAria : strings.speakAria}
+          title={speakError || (isSpeaking ? strings.stopSpeakAria : strings.speakAria)}
           style={{
             flexShrink: 0,
             width: 26,
             height: 26,
             borderRadius: "50%",
-            border: "1px solid var(--lu-border)",
-            background: isSpeaking ? "var(--lu-blue)" : "white",
-            color: isSpeaking ? "white" : "var(--lu-text-muted)",
+            border: speakError ? "1px solid #dc2626" : "1px solid var(--lu-border)",
+            background: speakError ? "#fef2f2" : isSpeaking ? "var(--lu-blue)" : "white",
+            color: speakError ? "#dc2626" : isSpeaking ? "white" : "var(--lu-text-muted)",
             fontSize: 12,
             lineHeight: 1,
             display: "flex",
@@ -148,6 +168,8 @@ export default function MessageBubble({
                 animation: "spin 0.7s linear infinite",
               }}
             />
+          ) : speakError ? (
+            "!"
           ) : isSpeaking ? (
             "■"
           ) : (
