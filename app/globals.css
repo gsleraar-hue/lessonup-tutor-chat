@@ -127,6 +127,34 @@ textarea {
   padding: 28px;
 }
 
+.level-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.level-switch-btn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--lu-border);
+  background: white;
+  color: var(--lu-text);
+  font-size: 14px;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.level-switch-btn:hover {
+  border-color: var(--lu-blue);
+}
+
+.level-switch-btn-active {
+  background: var(--lu-blue-light);
+  border-color: var(--lu-blue);
+  color: var(--lu-blue);
+}
+
 .steps {
   list-style: none;
   margin: 0 0 28px;

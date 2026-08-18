@@ -1,5 +1,5 @@
 import { ANTHROPIC_MODEL, getAnthropicClient } from "@/lib/anthropic";
-import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, DEFAULT_LEVEL, isLanguage, isLevel, t } from "@/lib/i18n";
 import { buildSystemPrompt } from "@/lib/prompts";
 import type { ChatRequestBody } from "@/lib/types";
 
@@ -18,6 +18,7 @@ export async function POST(req: Request) {
   }
 
   const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const level = isLevel(body?.level) ? body.level : DEFAULT_LEVEL;
   const strings = t(language).api;
 
   const { contextText, lessonTitle, history, message } = body ?? {};
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
         const claudeStream = anthropic.messages.stream({
           model: ANTHROPIC_MODEL,
           max_tokens: 1024,
-          system: buildSystemPrompt(lessonTitle || "deze les", contextText, language),
+          system: buildSystemPrompt(lessonTitle || "deze les", contextText, language, level),
           messages,
         });
 

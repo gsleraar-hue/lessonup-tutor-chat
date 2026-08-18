@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, DEFAULT_LEVEL, isLanguage, isLevel, t } from "@/lib/i18n";
 import {
   fetchLessonContent,
   InvalidLessonUrlError,
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
   }
 
   const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const level = isLevel(body?.level) ? body.level : DEFAULT_LEVEL;
   const strings = t(language).api;
 
   if (!body?.url || typeof body.url !== "string") {
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
     lesson.suggestedQuestions = await generateSuggestedQuestions(
       lesson.title,
       lesson.contextText,
-      language
+      language,
+      level
     );
     return NextResponse.json(lesson);
   } catch (err) {

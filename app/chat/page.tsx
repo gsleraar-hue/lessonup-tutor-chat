@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ChatWidget from "@/components/ChatWidget";
-import { DEFAULT_LANGUAGE, isLanguage, type Language, t } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, DEFAULT_LEVEL, isLanguage, isLevel, type Language, type Level, t } from "@/lib/i18n";
 import type { LessonContent } from "@/lib/types";
 
 export default function ChatPage() {
   const router = useRouter();
   const [lesson, setLesson] = useState<LessonContent | null | undefined>(undefined);
   const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
+  const [level, setLevel] = useState<Level>(DEFAULT_LEVEL);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("lesson");
@@ -20,6 +21,8 @@ export default function ChatPage() {
     }
     const storedLanguage = sessionStorage.getItem("language");
     if (isLanguage(storedLanguage)) setLanguage(storedLanguage);
+    const storedLevel = sessionStorage.getItem("level");
+    if (isLevel(storedLevel)) setLevel(storedLevel);
     try {
       setLesson(JSON.parse(raw));
     } catch {
@@ -57,7 +60,7 @@ export default function ChatPage() {
         style={{ width: "100%", height: "100%", border: "none" }}
         allow="fullscreen"
       />
-      <ChatWidget lesson={lesson} language={language} />
+      <ChatWidget lesson={lesson} language={language} level={level} />
     </div>
   );
 }

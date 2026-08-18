@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { type Language, t } from "@/lib/i18n";
+import { type Language, type Level, t } from "@/lib/i18n";
 import type { LessonContent } from "@/lib/types";
 
 const EXAMPLE_URL = "https://lessonup.app/self-paced/35f949de-80e0-4f94-a726-e7351f34d0dc";
 
-export default function LessonUrlForm({ language }: { language: Language }) {
+export default function LessonUrlForm({
+  language,
+  level,
+}: {
+  language: Language;
+  level: Level;
+}) {
   const router = useRouter();
   const strings = t(language).form;
   const [url, setUrl] = useState("");
@@ -22,7 +28,7 @@ export default function LessonUrlForm({ language }: { language: Language }) {
       const res = await fetch("/api/lesson", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, language }),
+        body: JSON.stringify({ url, language, level }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -32,6 +38,7 @@ export default function LessonUrlForm({ language }: { language: Language }) {
       const lesson = data as LessonContent;
       sessionStorage.setItem("lesson", JSON.stringify(lesson));
       sessionStorage.setItem("language", language);
+      sessionStorage.setItem("level", level);
       router.push("/chat");
     } catch (err) {
       setError(strings.networkError);

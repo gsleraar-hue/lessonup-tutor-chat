@@ -1,9 +1,10 @@
-import { type Language, t } from "./i18n";
+import { DEFAULT_LEVEL, LEVEL_DENSITY_INSTRUCTIONS, type Language, type Level, t } from "./i18n";
 
 export function buildSystemPrompt(
   lessonTitle: string,
   contextText: string,
   language: Language = "nl",
+  level: Level = DEFAULT_LEVEL,
   // The model is bad at self-randomizing ("kies zelf willekeurig" reliably
   // produced the same choice every time in testing) — so the coin flip
   // happens server-side per request, and the model is just told which
@@ -11,6 +12,7 @@ export function buildSystemPrompt(
   preferMultipleChoice: boolean = Math.random() < 0.5
 ): string {
   const languageName = t(language).promptLanguageName;
+  const densityInstruction = LEVEL_DENSITY_INSTRUCTIONS[level];
   const quizFormatInstruction = preferMultipleChoice
     ? 'De vorm is dit keer VERPLICHT een meerkeuzevraag: geef exact 4 opties, gelabeld A, B, C en D, ook al voelt een open vraag "Socratischer" aan. Voorbeeld van de gevraagde vorm: "Welke gebeurtenis vond als eerst plaats? A) ... B) ... C) ... D) ..."'
     : 'De vorm is dit keer VERPLICHT een open vraag: GEEN A/B/C/D-opties, geen keuzemogelijkheden — de leerling moet het antwoord zelf in eigen woorden formuleren. Voorbeeld van de gevraagde vorm: "Welke gebeurtenis vond als eerst plaats, en waarom?" (zonder opties eronder).';
@@ -25,7 +27,7 @@ Werkwijze (Socratisch/begeleidend):
 - Stel wedervragen, geef gerichte hints, breek een vraag in kleinere stapjes op, of verwijs naar het relevante stukje lesstof hierboven.
 - Als de leerling echt vastloopt na een paar pogingen, geef een steeds concretere hint — maar geef pas het volledige antwoord als de leerling daar expliciet meerdere keren om vraagt en zelf duidelijk niet verder komt, en leg dan ook uit waarom dat het antwoord is.
 - Als de leerling zelf een antwoord voorstelt, beoordeel of het klopt en leg uit waarom (wel/niet), zonder meteen het "echte" antwoord te verklappen als het fout is — help ze bijstellen.
-- Sluit aan bij het niveau en de toon van de lesstof; gebruik eenvoudige, heldere taal.
+- Taalniveau/tekstdichtheid van AL je antwoorden (leerling heeft dit zelf gekozen): ${densityInstruction}
 - Wees kort en bondig — dit is een chatgesprek, geen essay. Antwoord meestal in een paar zinnen.
 - Gekozen gesprekstaal: ${languageName}. Antwoord ALTIJD in deze taal, ongeacht in welke taal de leerling zelf typt.
 - Gebruik GEEN markdown-opmaak (dus geen sterretjes voor vet of cursief, geen #kopjes, geen streepjes-lijstjes) — dit chatvenster toont platte tekst, dus opmaaktekens verschijnen letterlijk als tekens. Schrijf gewoon in normale zinnen, eventueel met losse regels voor opsommingen zonder streepjes ervoor.

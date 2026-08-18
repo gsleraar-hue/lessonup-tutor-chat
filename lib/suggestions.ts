@@ -1,5 +1,5 @@
 import { ANTHROPIC_MODEL, getAnthropicClient } from "./anthropic";
-import { type Language, t } from "./i18n";
+import { DEFAULT_LEVEL, LEVEL_DENSITY_INSTRUCTIONS, type Language, type Level, t } from "./i18n";
 
 /**
  * Genereert een paar korte, on-topic voorbeeldvragen die een leerling zou
@@ -10,12 +10,14 @@ import { type Language, t } from "./i18n";
 export async function generateSuggestedQuestions(
   lessonTitle: string,
   contextText: string,
-  language: Language = "nl"
+  language: Language = "nl",
+  level: Level = DEFAULT_LEVEL
 ): Promise<string[]> {
   const fallback = t(language).chatWindow.fallbackSuggestions;
   try {
     const anthropic = getAnthropicClient();
     const languageName = t(language).promptLanguageName;
+    const densityInstruction = LEVEL_DENSITY_INSTRUCTIONS[level];
     const response = await anthropic.messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: 300,
@@ -23,6 +25,7 @@ export async function generateSuggestedQuestions(
         "Je bedenkt korte voorbeeldvragen die een leerling als EERSTE bericht aan een AI-huiswerkbegeleider zou kunnen sturen, aan het begin van een gloednieuw gesprek over een specifieke les — er is dus nog niets gezegd of ingevuld. " +
         "De vragen zijn dingen die de LEERLING zegt (ik-vorm), niet de tutor. " +
         "Verwijs waar zinvol naar concrete onderdelen van de les (bv. een specifiek slidenummer of onderwerp). " +
+        `Taalniveau van de leerling: ${densityInstruction} Formuleer de voorbeeldvragen zelf ook op dit niveau. ` +
         "BELANGRIJK: verklap zelf nooit een (vermoedelijk) juist antwoord op een quizvraag of opgave uit de les, ook niet terloops. " +
         "Gebruik GEEN 'klopt mijn antwoord'-achtige vragen — die slaan nergens op als openingsbericht, want de leerling heeft nog helemaal geen antwoord gegeven in dit gesprek. Dat type vraag past pas later, als vervolg op iets dat al besproken is. " +
         "Varieer in plaats daarvan met: een hint-vraag over een specifieke opgave, een uitleg-vraag over een onderdeel van de lesstof, een overhoor-verzoek, en een nieuwsgierige open vraag over de les. " +

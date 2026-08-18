@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DEFAULT_LANGUAGE, isLanguage, t } from "@/lib/i18n";
+import { DEFAULT_LANGUAGE, DEFAULT_LEVEL, isLanguage, isLevel, t } from "@/lib/i18n";
 import { generateQuickReplies } from "@/lib/quickReplies";
 import type { QuickRepliesRequestBody } from "@/lib/types";
 
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   }
 
   const language = isLanguage(body?.language) ? body.language : DEFAULT_LANGUAGE;
+  const level = isLevel(body?.level) ? body.level : DEFAULT_LEVEL;
   const { contextText, lessonTitle, history } = body ?? {};
   if (!contextText || !Array.isArray(history)) {
     return NextResponse.json(
@@ -27,7 +28,8 @@ export async function POST(req: Request) {
     lessonTitle || "deze les",
     contextText,
     history,
-    language
+    language,
+    level
   );
   return NextResponse.json({ options });
 }

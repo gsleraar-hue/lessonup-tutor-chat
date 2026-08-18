@@ -2,10 +2,19 @@
 
 import { useState } from "react";
 import LessonUrlForm from "@/components/LessonUrlForm";
-import { DEFAULT_LANGUAGE, LANGUAGE_OPTIONS, type Language, t } from "@/lib/i18n";
+import {
+  DEFAULT_LANGUAGE,
+  DEFAULT_LEVEL,
+  LANGUAGE_OPTIONS,
+  LEVEL_OPTIONS,
+  type Language,
+  type Level,
+  t,
+} from "@/lib/i18n";
 
 export default function HomePage() {
   const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
+  const [level, setLevel] = useState<Level>(DEFAULT_LEVEL);
   const strings = t(language).home;
 
   return (
@@ -42,7 +51,25 @@ export default function HomePage() {
         <h1 className="home-title">{strings.title}</h1>
         <p className="home-subtitle">{strings.subtitle}</p>
         <div className="home-card">
-          <LessonUrlForm language={language} />
+          <span className="field-label" style={{ display: "block", marginBottom: 8 }}>
+            {strings.levelLabel}
+          </span>
+          <div className="level-switch" role="group" aria-label={strings.levelLabel}>
+            {LEVEL_OPTIONS.map((opt) => (
+              <button
+                key={opt.code}
+                type="button"
+                onClick={() => setLevel(opt.code)}
+                className={
+                  "level-switch-btn" + (level === opt.code ? " level-switch-btn-active" : "")
+                }
+                aria-pressed={level === opt.code}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <LessonUrlForm language={language} level={level} />
         </div>
       </div>
     </main>

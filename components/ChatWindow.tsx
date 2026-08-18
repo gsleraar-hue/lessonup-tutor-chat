@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { type Language, t } from "@/lib/i18n";
+import { DEFAULT_LEVEL, type Language, type Level, t } from "@/lib/i18n";
 import type { ChatMessage, LessonContent } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 
@@ -17,9 +17,11 @@ function buildInitialQuickReplies(lesson: LessonContent, language: Language): st
 export default function ChatWindow({
   lesson,
   language,
+  level = DEFAULT_LEVEL,
 }: {
   lesson: LessonContent;
   language: Language;
+  level?: Level;
 }) {
   const strings = t(language).chatWindow;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -47,6 +49,7 @@ export default function ChatWindow({
           lessonTitle: lesson.title,
           history: historyWithReply,
           language,
+          level,
         }),
       });
       if (!res.ok) return;
@@ -83,6 +86,7 @@ export default function ChatWindow({
           history,
           message: text,
           language,
+          level,
         }),
       });
 

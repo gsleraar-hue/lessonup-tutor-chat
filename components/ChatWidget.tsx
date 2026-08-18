@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type Language, t } from "@/lib/i18n";
+import { DEFAULT_LEVEL, type Language, type Level, t } from "@/lib/i18n";
 import type { LessonContent } from "@/lib/types";
 import ChatWindow from "./ChatWindow";
 
@@ -13,9 +13,11 @@ import ChatWindow from "./ChatWindow";
 export default function ChatWidget({
   lesson,
   language,
+  level = DEFAULT_LEVEL,
 }: {
   lesson: LessonContent;
   language: Language;
+  level?: Level;
 }) {
   const [open, setOpen] = useState(false);
   const strings = t(language).widget;
@@ -81,7 +83,7 @@ export default function ChatWidget({
             </button>
           </div>
           <div style={{ flex: 1, minHeight: 0 }}>
-            <ChatWindow lesson={lesson} language={language} />
+            <ChatWindow lesson={lesson} language={language} level={level} />
           </div>
         </div>
       )}

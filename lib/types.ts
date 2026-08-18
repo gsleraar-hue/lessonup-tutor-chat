@@ -26,6 +26,7 @@ export interface ChatRequestBody {
   history: ChatMessage[];
   message: string;
   language?: string;
+  level?: string;
 }
 
 export interface QuickRepliesRequestBody {
@@ -33,11 +34,13 @@ export interface QuickRepliesRequestBody {
   lessonTitle: string;
   history: ChatMessage[];
   language?: string;
+  level?: string;
 }
 
 export interface LessonRequestBody {
   url: string;
   language?: string;
+  level?: string;
 }
 
 export interface LessonErrorResponse {

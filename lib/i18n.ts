@@ -11,6 +11,38 @@ export const LANGUAGE_OPTIONS: { code: Language; label: string; flag: string }[]
   { code: "en", label: "English", flag: "🇬🇧" },
 ];
 
+// Schoolniveau, gekoppeld aan de Nederlandse taal-referentieniveaus — bepaalt
+// hoe eenvoudig/complex de tutor schrijft (zinslengte, woordkeuze, hoeveel
+// vaktaal zonder uitleg). Losstaand van de gesprekstaal (NL/EN): een
+// VWO-leerling die in het Engels chat, chat nog steeds op 3F-niveau.
+export type Level = "vmbo" | "havo" | "vwo";
+
+export const DEFAULT_LEVEL: Level = "havo";
+
+export function isLevel(value: unknown): value is Level {
+  return value === "vmbo" || value === "havo" || value === "vwo";
+}
+
+export const LEVEL_OPTIONS: { code: Level; label: string; referenceLevel: string }[] = [
+  { code: "vmbo", label: "VMBO", referenceLevel: "1F" },
+  { code: "havo", label: "HAVO", referenceLevel: "2F" },
+  { code: "vwo", label: "VWO", referenceLevel: "3F" },
+];
+
+// Instructions for the model on how dense/complex its language should be —
+// kept in Dutch regardless of the chosen output language, same as the rest
+// of the system prompt's own instructions (the model follows Dutch
+// instructions fine while still writing its reply in the requested
+// language).
+export const LEVEL_DENSITY_INSTRUCTIONS: Record<Level, string> = {
+  vmbo:
+    "Niveau VMBO (referentieniveau 1F): korte, eenvoudige zinnen. Concrete, alledaagse woorden. Vermijd moeilijke of abstracte begrippen; als een vakterm nodig is, leg 'm meteen in gewone woorden uit.",
+  havo:
+    "Niveau HAVO (referentieniveau 2F): iets langere zinnen mogen, met wat meer variatie. Gangbare schooltaal is prima; leg lastige vaktermen kort uit in plaats van ze als bekend te veronderstellen.",
+  vwo:
+    "Niveau VWO (referentieniveau 3F): complexere zinsbouw en een breder vocabulaire mogen, inclusief abstractere begrippen en vaktaal — je hoeft niet elk begrip te vereenvoudigen.",
+};
+
 // Centralized copy for every user-facing string in the app. Kept as plain
 // data so it can be imported from client components, server components and
 // API routes alike.
@@ -20,6 +52,7 @@ export const UI_STRINGS = {
       title: "Hulp bij je les, precies op tijd",
       subtitle:
         "Plak de link naar je LessonUp-les en krijg een AI-tutor die met je meedenkt — met hints en wedervragen, niet met kant-en-klare antwoorden.",
+      levelLabel: "Kies je niveau",
     },
     form: {
       step1Bold: "Vraag je docent om de link",
@@ -85,6 +118,7 @@ export const UI_STRINGS = {
       title: "Help with your lesson, right when you need it",
       subtitle:
         "Paste the link to your LessonUp lesson and get an AI tutor who thinks along with you — with hints and questions, not ready-made answers.",
+      levelLabel: "Choose your level",
     },
     form: {
       step1Bold: "Ask your teacher for the link",
@@ -147,7 +181,7 @@ export const UI_STRINGS = {
 } satisfies Record<
   Language,
   {
-    home: { title: string; subtitle: string };
+    home: { title: string; subtitle: string; levelLabel: string };
     form: {
       step1Bold: string;
       step1Rest: string;
