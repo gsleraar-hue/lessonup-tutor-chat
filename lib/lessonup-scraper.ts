@@ -183,18 +183,29 @@ export function parseLessonText(rawText: string, sourceUrl: string): LessonConte
   // slide header.
   const slidePattern = /^(\d+)\s+-\s+(?!\d+$)(.+)$/;
   const slides: LessonSlide[] = [];
-  let current: LessonSlide | null = null;
+  // Each slide's own content comes BEFORE its "N - Type" caption line in
+  // the rendered text (verified against the live page's accessibility
+  // tree), not after — so we buffer lines until we hit a caption, then that
+  // caption closes off the slide the buffered lines belong to. Getting this
+  // backwards silently shifts every slide's content by one (slide 1's text
+  // ends up labeled as slide 2, etc.).
+  let pendingLines: string[] = [];
 
   for (const line of slideLines) {
     const match = line.match(slidePattern);
     if (match) {
-      if (current) slides.push(current);
-      current = { index: Number(match[1]), type: match[2], text: "" };
-    } else if (current) {
-      current.text = current.text ? `${current.text}\n${line}` : line;
+      slides.push({
+        index: Number(match[1]),
+        type: match[2],
+        text: pendingLines.join("\n"),
+      });
+      pendingLines = [];
+    } else {
+      pendingLines.push(line);
     }
   }
-  if (current) slides.push(current);
+  // Anything left over after the last caption is trailing page content
+  // (e.g. "Meer lessen zoals deze" recommendations), not a slide — discard.
 
   if (slides.length === 0) {
     throw new LessonScrapeError(
