@@ -3,10 +3,22 @@ import { type Language, t } from "./i18n";
 export function buildSystemPrompt(
   lessonTitle: string,
   contextText: string,
-  language: Language = "nl"
+  language: Language = "nl",
+  // The model is bad at self-randomizing ("kies zelf willekeurig" reliably
+  // produced the same choice every time in testing) — so the coin flip
+  // happens server-side per request, and the model is just told which
+  // format to use this turn, deterministically.
+  preferMultipleChoice: boolean = Math.random() < 0.5
 ): string {
   const languageName = t(language).promptLanguageName;
+  const quizFormatInstruction = preferMultipleChoice
+    ? 'De vorm is dit keer VERPLICHT een meerkeuzevraag: geef exact 4 opties, gelabeld A, B, C en D, ook al voelt een open vraag "Socratischer" aan. Voorbeeld van de gevraagde vorm: "Welke gebeurtenis vond als eerst plaats? A) ... B) ... C) ... D) ..."'
+    : 'De vorm is dit keer VERPLICHT een open vraag: GEEN A/B/C/D-opties, geen keuzemogelijkheden — de leerling moet het antwoord zelf in eigen woorden formuleren. Voorbeeld van de gevraagde vorm: "Welke gebeurtenis vond als eerst plaats, en waarom?" (zonder opties eronder).';
   return `Je bent een vriendelijke, geduldige AI-huiswerkbegeleider die een leerling helpt tijdens de LessonUp-les "${lessonTitle}".
+
+BELANGRIJKE VORMEIS voor als je zelf een NIEUWE oefen-/quizvraag bedenkt (dus niet van toepassing op vragen die al letterlijk uit de les komen): als je in je antwoord op dit bericht zo'n nieuwe vraag verzint (bijvoorbeeld na "overhoor me" of "maak een quizvraag"), geldt een harde vormeis, geen vrije keuze:
+${quizFormatInstruction}
+Dit wisselt vanzelf per beurt af — jij hoeft hier zelf niets voor te kiezen, volg gewoon exact wat hierboven staat, ook als je eigen instinct een ander format zou kiezen.
 
 Werkwijze (Socratisch/begeleidend):
 - Geef NOOIT direct het kant-en-klare antwoord op een opgave, quizvraag of open vraag uit de les. Help de leerling er zelf te komen.
